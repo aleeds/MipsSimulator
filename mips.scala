@@ -12,10 +12,10 @@ object mips {
     // reads in the data
     def read_in(fname1 : String, fname2 : String):(Array[Int],Array[Int]) = {
       val dis = new DataInputStream(new BufferedInputStream(new FileInputStream(fname1)))
-      val memory = Array.fill(1 << 14)(dis.readInt)
+      val memory : Array[Int] = Array.fill(1 << 14)(dis.readInt)
       dis.close
       val dis2 = new DataInputStream(new BufferedInputStream(new FileInputStream(fname2)))
-      val regs = Array.fill(32)(dis2.readInt)
+      val regs :Array[Int]= Array.fill(32)(dis2.readInt)
       dis2.close
       return (memory,regs)
     }
@@ -84,18 +84,20 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
   def Execute():Unit = {
 
     // while the pc counter isn't at the last instruction
+    //println(memory(0))
     while (pc < 0x3FFC) {
-      //println(pc)
-      var counter = 1
-      for (i <- registers) {
-        print(i + "  ")
-        if (counter % 4 == 0) println("")
-        counter += 1
-      }
+      //println("Beginning loop pc " + pc)
+      // var counter = 1
+      // for (i <- registers) {
+      //   print(i + "  ")
+      //   if (counter % 4 == 0) println("")
+      //   counter += 1
+      // }
       //println("")
-      val (pct,_) = alu.Execute(pc,4,2)
-      val instruction = memory(pct)
-
+      // increment pc by 1 instead of 4 cause it just goes forward 1 index
+      val (pct,_) = alu.Execute(pc,1,2)
+      val instruction = memory(pc)
+      //println(instruction)
       //  Output[0] = 31 - 26 opcode
       //  Output[1] = 25 - 21 rs
       //  Output[2] = 20 - 16 rt
@@ -114,7 +116,18 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
       //         1 -> rs
       //         2 -> rt
       //         4 -> immediate
+
       val (zero,one,two,three,four,five) = extracter.Extract(instruction)
+      /*
+      println("Op Code " + zero.toBinaryString)
+      print(one.toBinaryString + " " )
+      println(one)
+      print(two.toBinaryString + " " )
+      println(two)
+      print(three.toBinaryString + " " )
+      println(three)
+      println(four.toBinaryString + " " )
+      */
       //println("rformat : R[" +  three + "] = R[" + one + "] + " + two)
       // this gross line just gets all of the control wires
       val (regDst, alu_src,memto_reg,reg_write,mem_read,mem_write,branch,alu_op)
@@ -142,9 +155,14 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
       // far write mux
       val write_data = if (memto_reg && mem_read) memory(alu_result) else alu_result
       if (mem_write) memory(alu_result) = reg_two
-      if (reg_write) registers(which_write_reg) = write_data
-      val p = readInt
-      //println("")
+      if (reg_write) {
+        // println("Register write")
+        // println(which_write_reg)
+        // println(write_data)
+        registers(which_write_reg) = write_data
+      }
+      //val p = readLine
+      //println("Ending Loop pc: " + pc)
     }
 
   }
@@ -172,10 +190,12 @@ class ExtractBits {
   //  Output[4] = 15 - 0
   //  Output[5] = 5 - 0
   def Extract(instruction : Int) : (Int,Int,Int,Int,Int,Int) = {
-    val out0 = GetKn(instruction,31,26)
-    val out1 = GetKn(instruction,25,21)
-    val out2 = GetKn(instruction,20,16)
-    val out3 = GetKn(instruction,15,11)
+    // There are some bad bugs in my bit-shifts code. It needs to be fixed.
+    // For now this will do.
+    val out0 = GetKn(instruction,31,27)
+    val out1 = GetKn(instruction,26,22)
+    val out2 = GetKn(instruction,21,17)
+    val out3 = GetKn(instruction,16,12)
     val out4 = GetKn(instruction,15, 0)
     val out5 = GetKn(instruction,5,0)
     (out0,out1,out2,out3,out4,out5)
@@ -183,21 +203,18 @@ class ExtractBits {
 
   def Test():Unit = {
     // fill in with test code later, get from textbook
-    //101011 01010 01001 0000000000 01000
+    // 000000 10001 10010 01000 00000 100000
     //val (a,b,c,d,e,f) = Extract(1453621256)
-    val instruction = 1453621256
-    print("It should be: 101011\n Result:")
-    println(GetKn(instruction,31,26).toBinaryString)
-    print("It should be: 01010\n Result:")
-    println(GetKn(instruction,25,21).toBinaryString)
-    print("It should be: 01001\n Result:")
-    println(GetKn(instruction,20,16).toBinaryString)
-    print("It should be: 0\n Result:")
-    println(GetKn(instruction,15,11).toBinaryString)
-    print("It should be: 01000\n Result:")
-    println(GetKn(instruction,15,0).toBinaryString)
-    print("It should be: 01000\n Result:")
-    println(GetKn(instruction,5,0).toBinaryString)
+    val instruction = 36847648
+    print("It should be: 0 Result:  ")
+    println(GetKn(instruction,31,27).toBinaryString)
+    print("It should be: 10001 Result:  ")
+    println(GetKn(instruction,26,22).toBinaryString)
+    print("It should be: 10010 Result: ")
+    println(GetKn(instruction,21,17).toBinaryString)
+    print("It should be: 01000 Result:  ")
+    println(GetKn(instruction,16,12).toBinaryString)
+
   }
 }
 // Tested execute, not control (control however is just a large case match)
@@ -212,7 +229,7 @@ class Alu {
         data_one + data_two
       }
       case 6 => {
-        println("Subtraction")
+        //println("Subtraction")
         data_one - data_two
       }
       // could be wrong direction
@@ -285,15 +302,15 @@ class Control {
     // beq = 3
     val itype = instruction match {
       case 35 => {
-        print("lw ")
+        //print("lw ")
         1
       }
       case 43 => {
-        print("sw ")
+        //print("sw ")
         2
       }
       case 4 => {
-        print("beq ")
+        //print("beq ")
         3
       }
       // everything else is rformat
