@@ -53,6 +53,7 @@ object mips {
       println("Failure on memory test")
 
     }
+    //executor.print_registers(registers_test)
     if (registers_test.deep != registers.deep) {
       println("Failure on registers")
     }
@@ -62,7 +63,7 @@ object mips {
   }
   val tst = true
   def main(args : Array[String]) = {
-    if (tst) run("memory","regs")
+    if (tst) run("memory2","regs2")
     else test()
   }
 }
@@ -78,7 +79,21 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
 
   // placeholder
   def sign_extender(inp : Int) : Int = {
-    return inp
+    // gets the sign bit
+    val bit_16 = inp & (1 << 15)
+    var t = (bit_16 << 16) | inp
+    for (i <- 15 to 0 by -1)  t = (bit_16 << i) | t
+    return t
+  }
+
+  def print_registers(regs : Array[Int]) = {
+    var counter = 1
+    for (i <- regs) {
+      print(i + "  ")
+      if (counter % 4 == 0) println("")
+      counter += 1
+    }
+    println("")
   }
 
   def Execute():Unit = {
@@ -87,13 +102,7 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
     //println(memory(0))
     while (pc < 0x3FFC) {
       //println("Beginning loop pc " + pc)
-      // var counter = 1
-      // for (i <- registers) {
-      //   print(i + "  ")
-      //   if (counter % 4 == 0) println("")
-      //   counter += 1
-      // }
-      //println("")
+      //print_registers(registers)
       // increment pc by 1 instead of 4 cause it just goes forward 1 index
       val (pct,_) = alu.Execute(pc,1,2)
       val instruction = memory(pc)
@@ -118,16 +127,16 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
       //         4 -> immediate
 
       val (zero,one,two,three,four,five) = extracter.Extract(instruction)
-      /*
-      println("Op Code " + zero.toBinaryString)
-      print(one.toBinaryString + " " )
-      println(one)
-      print(two.toBinaryString + " " )
-      println(two)
-      print(three.toBinaryString + " " )
-      println(three)
-      println(four.toBinaryString + " " )
-      */
+
+      // println("Op Code " + zero.toBinaryString)
+      // print(one.toBinaryString + " " )
+      // println(one)
+      // print(two.toBinaryString + " " )
+      // println(two)
+      // print(three.toBinaryString + " " )
+      // println(three)
+      // println(four.toBinaryString + " " )
+      // println(sign_extender(four) + " ")
       //println("rformat : R[" +  three + "] = R[" + one + "] + " + two)
       // this gross line just gets all of the control wires
       val (regDst, alu_src,memto_reg,reg_write,mem_read,mem_write,branch,alu_op)
@@ -145,11 +154,16 @@ class Executor(var memory : Array[Int],var registers : Array[Int]) {
       val alu_input_two = if (alu_src) sgned_extended else reg_two
 
       val (alu_result,zero_boolean) = alu.Execute(reg_one,alu_input_two,alu_control)
-
+      // println("")
+      // println(reg_one)
+      // println(alu_input_two)
+      // println("alu_result "  + alu_result)
       // THIS SECTION IS FOR THE PC
       val pc_change_value = sgned_extended << 2
       val (pc_branch,_) = alu.Execute(pct,pc_change_value,2)
       // Mux for pc
+      // println("Branch : " + branch)
+      // println("zero_boolean : " + zero_boolean)
       pc = if (branch && zero_boolean) pc_branch else pct
       // END OF PC SECTION
       // far write mux
