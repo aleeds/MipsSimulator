@@ -47,14 +47,17 @@ object mips {
     val (memory_test,registers_test) =
       read_in(fname1 + "_test.out",fname2 + "_test.out")
     val executor = new Executor(memory,registers)
+    executor.print_registers(registers)
     executor.Execute()
 
-    if (memory_test.deep != memory.deep) {
+    if (memory_test.deep != executor.memory.deep) {
       println("Failure on memory test")
 
     }
-    //executor.print_registers(registers_test)
-    if (registers_test.deep != registers.deep) {
+
+    executor.print_registers(registers)
+    executor.print_registers(registers_test)
+    if (registers_test.deep != executor.registers.deep) {
       println("Failure on registers")
     }
 
