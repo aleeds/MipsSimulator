@@ -44,8 +44,6 @@ object mips {
 
   def run(fname1 : String, fname2 : String):Unit = {
     val (memory, registers) = read_in(fname1 + ".in",fname2 + ".in")
-    val (memory_test,registers_test) =
-      read_in(fname1 + "_test.out",fname2 + "_test.out")
     val executor = new Executor(memory,registers)
     executor.Execute()
 
